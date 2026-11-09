@@ -1,7 +1,7 @@
 # LAB 3 9/11/2026
 
 ## Tổng quan về lab 3:
-Thiết kế mạch phát hiện té ngã sử dụng MPU6050, dùng ESP32 đọc dữ liệu và gửi lên MQTT Broker qua Wifi, đồng thời hiển thị dữ liệu lên web
+Thiết kế mạch phát hiện té ngã sử dụng MPU6050, dùng ESP32 đọc dữ liệu và gửi lên MQTT Broker qua Wifi, đồng thời hiển thị dữ liệu lên Web/App.
 
 # Các file có trong bài lab:
 
