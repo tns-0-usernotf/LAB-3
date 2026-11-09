@@ -13,11 +13,11 @@ TEXT 1
 
 TEXT 2
 
-# Links to the example headings above
+# Các file có trong bài lab:
 
-Link to the sample section: [Link Text](#sample-section).
+File mô phỏng Wokwi: [Wokwi](#sample-section).
 
-Link to the helpful section: [Link Text](#thisll-be-a-helpful-section-about-the-greek-letter-Θ).
+File báo cáo Word: [Word](#thisll-be-a-helpful-section-about-the-greek-letter-Θ).
 
 Link to the first non-unique section: [Link Text](#this-heading-is-not-unique-in-the-file).
 
