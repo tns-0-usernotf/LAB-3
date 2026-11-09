@@ -1,6 +1,6 @@
-# Example headings
+# LAB 3 9/11/2026
 
-## Sample Section
+## Tổng quan về lab 3:
 
 ## This'll be a _Helpful_ Section About the Greek Letter Θ!
 A heading containing characters not allowed in fragments, UTF-8 characters, two consecutive spaces between the first and second words, and formatting.
