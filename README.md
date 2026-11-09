@@ -1,17 +1,7 @@
 # LAB 3 9/11/2026
 
 ## Tổng quan về lab 3:
-
-## This'll be a _Helpful_ Section About the Greek Letter Θ!
-A heading containing characters not allowed in fragments, UTF-8 characters, two consecutive spaces between the first and second words, and formatting.
-
-## This heading is not unique in the file
-
-TEXT 1
-
-## This heading is not unique in the file
-
-TEXT 2
+Thiết kế mạch phát hiện té ngã sử dụng MPU6050, dùng ESP32 đọc dữ liệu và gửi lên MQTT Broker qua Wifi, đồng thời hiển thị dữ liệu lên web
 
 # Các file có trong bài lab:
 
