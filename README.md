@@ -9,6 +9,4 @@ File mô phỏng Wokwi: [Wokwi](#sample-section).
 
 File báo cáo Word: [Word](#thisll-be-a-helpful-section-about-the-greek-letter-Θ).
 
-Link to the first non-unique section: [Link Text](#this-heading-is-not-unique-in-the-file).
-
-Link to the second non-unique section: [Link Text](#this-heading-is-not-unique-in-the-file-1).
+File hình ảnh kết quả mô phỏng: [Image](#this-heading-is-not-unique-in-the-file).
