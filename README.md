@@ -11,6 +11,6 @@ File báo cáo Word: [Word](https://lmsutceduvn-my.sharepoint.com/:w:/g/personal
 
 File hình ảnh kết quả mô phỏng: [Drive](https://drive.google.com/drive/folders/1iDDBARwwMo7knB8ratl5SjB0ZOt-7auF?usp=sharing).
 
-# Link giao diện web:
+# Link giao diện web mô phỏng hoạt động:
 
-Web: [Web](https://tns-0-usernotf.github.io/LAB-3/).
+Web mô phỏng: [Web](https://tns-0-usernotf.github.io/LAB-3/).
