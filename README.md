@@ -9,8 +9,6 @@ File mô phỏng Wokwi: [Wokwi](https://wokwi.com/projects/480693354762195969).
 
 File báo cáo Word: [Word](https://lmsutceduvn-my.sharepoint.com/:w:/g/personal/tuan231432387_lms_utc_edu_vn/IQCWcbStUx-eSpbMfsCgoVhFAb8iL4sM7E4_O8baN3F1iVQ?e=dF23Gp).
 
-File hình ảnh kết quả mô phỏng: [Drive](https://drive.google.com/drive/folders/1iDDBARwwMo7knB8ratl5SjB0ZOt-7auF?usp=sharing).
-
 # Link giao diện web mô phỏng hoạt động:
 
 Web mô phỏng: [Web](https://tns-0-usernotf.github.io/LAB-3/).
