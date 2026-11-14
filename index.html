@@ -2,24 +2,41 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hệ thống Phát hiện Té ngã - Lab 3 Đề 5</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Thư viện MQTT.js hiện đại (Hỗ trợ WSS trên mọi trình duyệt) -->
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- Thư viện Chart.js bản ổn định -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #2c3e50; }
-    h1 { text-align: center; margin-bottom: 5px; }
-    .status-bar { text-align: center; margin-bottom: 20px; font-weight: bold; }
+    body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f0f2f5; margin: 0; padding: 20px; color: #1c1e21; }
+    h1 { text-align: center; color: #1a73e8; margin-bottom: 8px; font-size: 24px; }
+    .status-bar { text-align: center; margin-bottom: 18px; font-weight: 600; padding: 8px; border-radius: 6px; background: #fff; max-width: 600px; margin-left: auto; margin-right: auto; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    .status-online { color: #2ecc71; }
+    .status-offline { color: #e74c3c; }
+    
+    /* Các thẻ HTML class hiển thị dữ liệu số */
     .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 20px; }
-    .card { background: #fff; border-radius: 10px; padding: 18px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
-    .metric-label { font-size: 14px; color: #7f8c8d; text-transform: uppercase; }
-    .metric-value { font-size: 28px; font-weight: bold; color: #2980b9; margin: 10px 0; }
-    .alert-safe { background: #d4edda; color: #155724; }
-    .alert-danger { background: #f8d7da; color: #721c24; animation: blink 0.8s infinite; }
-    @keyframes blink { 50% { opacity: 0.5; } }
-    .control-panel { display: flex; justify-content: center; gap: 20px; margin-bottom: 25px; }
-    .btn-control { padding: 12px 28px; font-size: 16px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; background: #34495e; transition: 0.2s; }
-    .btn-control.active-led { background: #e74c3c; }
-    .btn-control.active-buzzer { background: #f39c12; }
+    .card { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); text-align: center; }
+    .metric-label { font-size: 13px; color: #65676b; font-weight: bold; text-transform: uppercase; }
+    .metric-value { font-size: 28px; font-weight: bold; color: #1a73e8; margin: 10px 0; }
+    .sub-value { font-size: 13px; color: #555; }
+    
+    .alert-safe { background: #d4edda; border: 2px solid #28a745; }
+    .alert-safe .metric-value { color: #155724; }
+    .alert-danger { background: #f8d7da; border: 2px solid #dc3545; animation: blink 0.6s infinite; }
+    .alert-danger .metric-value { color: #721c24; }
+    @keyframes blink { 50% { opacity: 0.6; } }
+
+    /* Khu vực 2 nút Button điều khiển */
+    .control-panel { display: flex; justify-content: center; flex-wrap: wrap; gap: 15px; margin-bottom: 20px; }
+    .btn-control { padding: 12px 24px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: white; background: #5f6368; transition: 0.2s; }
+    .btn-control:hover { opacity: 0.9; }
+    .btn-control.active-led { background: #dc3545; box-shadow: 0 0 10px rgba(220,53,69,0.5); }
+    .btn-control.active-buzzer { background: #fd7e14; box-shadow: 0 0 10px rgba(253,126,20,0.5); }
+    .btn-sim { background: #198754; }
+
+    /* Khu vực 2 biểu đồ thời gian thực */
     .charts-container { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .chart-box { background: #fff; padding: 15px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
     @media (max-width: 768px) { .charts-container { grid-template-columns: 1fr; } }
@@ -28,130 +45,166 @@
 <body>
 
   <h1>HỆ THỐNG GIÁM SÁT VÀ PHÁT HIỆN TÉ NGÃ (FALL DETECTION)</h1>
-  <div class="status-bar" id="mqtt-status">Trạng thái MQTT: Đang kết nối...</div>
+  <div class="status-bar" id="mqtt-status">Trạng thái MQTT: <span class="status-offline">Đang kết nối tới broker.emqx.io...</span></div>
 
-  <!-- Các thẻ HTML class hiển thị dữ liệu gia tốc và góc nghiêng dạng số -->
+  <!-- Các thẻ HTML "class" hiển thị dữ liệu gia tốc và góc nghiêng dạng số -->
   <div class="grid-cards">
     <div class="card">
       <div class="metric-label">Gia tốc tổng hợp (SVM)</div>
       <div class="metric-value val-acc">0.00 m/s²</div>
-      <small class="val-xyz">Ax: 0 | Ay: 0 | Az: 0</small>
+      <div class="sub-value val-xyz">Ax: 0.0 | Ay: 0.0 | Az: 0.0</div>
     </div>
     <div class="card">
       <div class="metric-label">Góc nghiêng Roll</div>
       <div class="metric-value val-roll">0.0 °</div>
+      <div class="sub-value">Ngưỡng cảnh báo: ±60°</div>
     </div>
     <div class="card">
       <div class="metric-label">Góc nghiêng Pitch</div>
       <div class="metric-value val-pitch">0.0 °</div>
+      <div class="sub-value">Ngưỡng cảnh báo: ±60°</div>
     </div>
     <div class="card alert-safe" id="fall-card">
       <div class="metric-label">Trạng thái cơ thể</div>
       <div class="metric-value val-state">BÌNH THƯỜNG</div>
+      <div class="sub-value" id="last-update">Chưa có dữ liệu</div>
     </div>
   </div>
 
-  <!-- 2 nút button điều khiển trạng thái LED và Loa cảnh báo (chế độ Manual) -->
+  <!-- 2 nút "button" điều khiển LED và Loa cảnh báo (chế độ Manual) -->
   <div class="control-panel">
     <button class="btn-control" id="btn-led" onclick="toggleDevice('led')">LED Cảnh báo: TẮT (Manual)</button>
     <button class="btn-control" id="btn-buzzer" onclick="toggleDevice('buzzer')">Loa Cảnh báo: TẮT (Manual)</button>
+    <button class="btn-control btn-sim" id="btn-sim" onclick="toggleSimulation()">Chạy thử dữ liệu giả lập (Test UI)</button>
   </div>
 
   <!-- 2 biểu đồ cập nhật dữ liệu gia tốc và góc nghiêng theo thời gian thực -->
   <div class="charts-container">
     <div class="chart-box">
-      <canvas id="accChart"></canvas>
+      <canvas id="accChart" height="130"></canvas>
     </div>
     <div class="chart-box">
-      <canvas id="angleChart"></canvas>
+      <canvas id="angleChart" height="130"></canvas>
     </div>
   </div>
 
   <script>
-    const BROKER = "broker.emqx.io";
-    const PORT = 8083;
-    const TOPIC_DATA = "esp32/fall_detection/lab3_de5/data";
+    const TOPIC_DATA    = "esp32/fall_detection/lab3_de5/data";
     const TOPIC_CONTROL = "esp32/fall_detection/lab3_de5/control";
 
     let ledState = false;
     let buzzerState = false;
+    let simInterval = null;
 
-    // Khởi tạo Biểu đồ 1: Gia tốc
+    // 1. Khởi tạo Biểu đồ Gia tốc
     const accChart = new Chart(document.getElementById('accChart').getContext('2d'), {
       type: 'line',
-      data: { labels: [], datasets: [{ label: 'Gia tốc tổng hợp (m/s²)', data: [], borderColor: '#e74c3c', tension: 0.3, fill: false }] },
-      options: { responsive: true, scales: { y: { suggestedMin: 0, suggestedMax: 30 } } }
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Gia tốc tổng hợp SVM (m/s²)',
+          data: [],
+          borderColor: '#dc3545',
+          backgroundColor: 'rgba(220, 53, 69, 0.1)',
+          borderWidth: 2,
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: { y: { min: 0, max: 35 } }
+      }
     });
 
-    // Khởi tạo Biểu đồ 2: Góc nghiêng Roll & Pitch
+    // 2. Khởi tạo Biểu đồ Góc nghiêng Roll & Pitch
     const angleChart = new Chart(document.getElementById('angleChart').getContext('2d'), {
       type: 'line',
       data: {
         labels: [],
         datasets: [
-          { label: 'Roll (°)', data: [], borderColor: '#2980b9', tension: 0.3, fill: false },
-          { label: 'Pitch (°)', data: [], borderColor: '#27ae60', tension: 0.3, fill: false }
+          { label: 'Góc Roll (°)', data: [], borderColor: '#1a73e8', borderWidth: 2, tension: 0.3, fill: false },
+          { label: 'Góc Pitch (°)', data: [], borderColor: '#198754', borderWidth: 2, tension: 0.3, fill: false }
         ]
       },
-      options: { responsive: true, scales: { y: { suggestedMin: -90, suggestedMax: 90 } } }
-    });
-
-    // Kết nối MQTT qua WebSocket
-    const clientID = "WebClient_" + Math.random().toString(16).substr(2, 8);
-    const client = new Paho.MQTT.Client(BROKER, PORT, "/mqtt", clientID);
-
-    client.onConnectionLost = (res) => {
-      document.getElementById("mqtt-status").innerText = "Mất kết nối MQTT: " + res.errorMessage;
-    };
-
-    client.onMessageArrived = (message) => {
-      if (message.destinationName === TOPIC_DATA) {
-        const data = JSON.parse(message.payloadString);
-        const now = new Date().toLocaleTimeString();
-
-        // Cập nhật các thẻ HTML class
-        document.querySelector(".val-acc").innerText = data.totalAcc.toFixed(2) + " m/s²";
-        document.querySelector(".val-xyz").innerText = `Ax: ${data.ax.toFixed(1)} | Ay: ${data.ay.toFixed(1)} | Az: ${data.az.toFixed(1)}`;
-        document.querySelector(".val-roll").innerText = data.roll.toFixed(1) + " °";
-        document.querySelector(".val-pitch").innerText = data.pitch.toFixed(1) + " °";
-
-        const fallCard = document.getElementById("fall-card");
-        const stateText = document.querySelector(".val-state");
-        if (data.isFall) {
-          fallCard.className = "card alert-danger";
-          stateText.innerText = "CẢNH BÁO TÉ NGÃ!";
-        } else {
-          fallCard.className = "card alert-safe";
-          stateText.innerText = "BÌNH THƯỜNG";
-        }
-
-        // Cập nhật 2 biểu đồ thời gian thực (giữ tối đa 15 điểm)
-        if (accChart.data.labels.length >= 15) {
-          accChart.data.labels.shift();
-          accChart.data.datasets[0].data.shift();
-          angleChart.data.labels.shift();
-          angleChart.data.datasets[0].data.shift();
-          angleChart.data.datasets[1].data.shift();
-        }
-        accChart.data.labels.push(now);
-        accChart.data.datasets[0].data.push(data.totalAcc);
-        accChart.update();
-
-        angleChart.data.labels.push(now);
-        angleChart.data.datasets[0].data.push(data.roll);
-        angleChart.data.datasets[1].data.push(data.pitch);
-        angleChart.update();
-      }
-    };
-
-    client.connect({
-      onSuccess: () => {
-        document.getElementById("mqtt-status").innerText = "Trạng thái MQTT: Đã kết nối (" + BROKER + ")";
-        client.subscribe(TOPIC_DATA);
+      options: {
+        responsive: true,
+        animation: false,
+        scales: { y: { min: -90, max: 90 } }
       }
     });
 
-    // Gửi lệnh điều khiển Manual khi nhấn Button
+    // Hàm cập nhật giao diện và biểu đồ
+    function updateDashboard(data) {
+      const now = new Date().toLocaleTimeString();
+
+      // Cập nhật các thẻ HTML class
+      document.querySelector(".val-acc").innerText = Number(data.totalAcc).toFixed(2) + " m/s²";
+      document.querySelector(".val-xyz").innerText = `Ax: ${Number(data.ax).toFixed(1)} | Ay: ${Number(data.ay).toFixed(1)} | Az: ${Number(data.az).toFixed(1)}`;
+      document.querySelector(".val-roll").innerText = Number(data.roll).toFixed(1) + " °";
+      document.querySelector(".val-pitch").innerText = Number(data.pitch).toFixed(1) + " °";
+      document.getElementById("last-update").innerText = "Cập nhật lúc: " + now;
+
+      const fallCard = document.getElementById("fall-card");
+      const stateText = document.querySelector(".val-state");
+      if (data.isFall) {
+        fallCard.className = "card alert-danger";
+        stateText.innerText = "CẢNH BÁO TÉ NGÃ!";
+      } else {
+        fallCard.className = "card alert-safe";
+        stateText.innerText = "BÌNH THƯỜNG";
+      }
+
+      // Cập nhật 2 biểu đồ (giữ tối đa 15 mẫu)
+      if (accChart.data.labels.length >= 15) {
+        accChart.data.labels.shift();
+        accChart.data.datasets[0].data.shift();
+        angleChart.data.labels.shift();
+        angleChart.data.datasets[0].data.shift();
+        angleChart.data.datasets[1].data.shift();
+      }
+
+      accChart.data.labels.push(now);
+      accChart.data.datasets[0].data.push(data.totalAcc);
+      accChart.update();
+
+      angleChart.data.labels.push(now);
+      angleChart.data.datasets[0].data.push(data.roll);
+      angleChart.data.datasets[1].data.push(data.pitch);
+      angleChart.update();
+    }
+
+    // 3. Kết nối MQTT qua WebSocket Secure (WSS port 8084) - Chạy trên mọi trình duyệt
+    const clientId = "WebFallClient_" + Math.random().toString(16).substring(2, 10);
+    const client = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
+      clientId: clientId,
+      clean: true,
+      connectTimeout: 4000,
+      reconnectPeriod: 1000
+    });
+
+    client.on("connect", () => {
+      document.getElementById("mqtt-status").innerHTML = 'Trạng thái MQTT: <span class="status-online">ĐÃ KẾT NỐI (wss://broker.emqx.io:8084) - Đang chờ dữ liệu từ ESP32...</span>';
+      client.subscribe(TOPIC_DATA);
+    });
+
+    client.on("error", (err) => {
+      document.getElementById("mqtt-status").innerHTML = 'Trạng thái MQTT: <span class="status-offline">Lỗi kết nối (' + err.message + ')</span>';
+    });
+
+    client.on("message", (topic, payload) => {
+      if (topic === TOPIC_DATA) {
+        try {
+          const data = JSON.parse(payload.toString());
+          updateDashboard(data);
+        } catch (e) {
+          console.error("Lỗi đọc JSON:", e);
+        }
+      }
+    });
+
+    // 4. Hàm gửi lệnh điều khiển từ 2 nút Button
     function toggleDevice(device) {
       if (device === 'led') {
         ledState = !ledState;
@@ -165,10 +218,34 @@
         btn.classList.toggle('active-buzzer', buzzerState);
       }
 
-      const payload = JSON.stringify({ manualLed: ledState, manualBuzzer: buzzerState });
-      const msg = new Paho.MQTT.Message(payload);
-      msg.destinationName = TOPIC_CONTROL;
-      client.send(msg);
+      if (client.connected) {
+        const payload = JSON.stringify({ manualLed: ledState, manualBuzzer: buzzerState });
+        client.publish(TOPIC_CONTROL, payload);
+      }
+    }
+
+    // 5. Nút giả lập dữ liệu để test Web ngay cả khi chưa chạy Wokwi
+    function toggleSimulation() {
+      const btn = document.getElementById('btn-sim');
+      if (simInterval) {
+        clearInterval(simInterval);
+        simInterval = null;
+        btn.innerText = "Chạy thử dữ liệu giả lập (Test UI)";
+        btn.style.background = "#198754";
+      } else {
+        btn.innerText = "Dừng giả lập dữ liệu";
+        btn.style.background = "#dc3545";
+        simInterval = setInterval(() => {
+          const isFallSim = Math.random() > 0.75; // 25% xác suất giả lập té ngã
+          const ax = isFallSim ? (Math.random() * 15 + 10) : (Math.random() * 2 - 1);
+          const ay = isFallSim ? (Math.random() * 15 + 10) : (Math.random() * 2 - 1);
+          const az = 9.8;
+          const totalAcc = Math.sqrt(ax*ax + ay*ay + az*az);
+          const roll = isFallSim ? 68.5 : (Math.random() * 10 - 5);
+          const pitch = isFallSim ? -64.2 : (Math.random() * 10 - 5);
+          updateDashboard({ ax, ay, az, totalAcc, roll, pitch, isFall: isFallSim });
+        }, 1000);
+      }
     }
   </script>
 </body>
